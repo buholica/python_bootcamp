@@ -2,6 +2,7 @@ from tkinter import *
 from tkinter import messagebox
 import random
 import pyperclip
+import json
 
 
 # ---------------------------- PASSWORD GENERATOR ---------------------------- #
@@ -33,6 +34,12 @@ def saving_password():
     website = site_input.get()
     email = email_input.get()
     password = password_input.get()
+    new_data = {
+        website: {
+            "email": email,
+            "password": password
+        }
+    }
 
     if len(email) == 0 or len(website) == 0 or len(password) == 0:
         messagebox.showinfo(title="Oops", message="Please, don't leave any fields empty!")
@@ -42,10 +49,36 @@ def saving_password():
                                                               f"\nIs it ok to save?")
 
         if is_ok:
-            with open("data.text", "a") as file:
-                file.write(f"{website} | {email} | {password}\n")
-            site_input.delete(0, END)
-            password_input.delete(0, END)
+            try:
+                with open("data.json", "r") as file:
+                    data = json.load(file)
+            except FileNotFoundError:
+                with open("data.json", "w") as file:
+                    json.dump(new_data, file, indent=4)
+            else:
+                data.update(new_data)
+
+                with open("data.json", "w") as file:
+                    json.dump(data, file, indent=4)
+            finally:
+                site_input.delete(0, END)
+                password_input.delete(0, END)
+
+
+# ------------------------------ SEARCH PASSWORD ------------------------------- #
+def search_password():
+    site = site_input.get()
+    try:
+        with open("data.json") as file:
+            data = json.load(file)
+    except FileNotFoundError:
+        messagebox.showinfo(title="Error", message=f"No Data File Found.")
+    else:
+        if site in data:
+            messagebox.showinfo(title=site, message=f"\nEmail: {data[site]['email']} "
+                                                    f"\nPassword: {data[site]['password']} ")
+        else:
+            messagebox.showinfo(title="Error", message=f"No details for {site} exists.")
 
 
 # ---------------------------- UI SETUP ------------------------------- #
@@ -69,8 +102,8 @@ password_title = Label(text="Password:")
 password_title.grid(column=0, row=3)
 
 # Inputs
-site_input = Entry(width=35)
-site_input.grid(column=1, row=1, columnspan=2, sticky="EW")
+site_input = Entry(width=21)
+site_input.grid(column=1, row=1, columnspan=1, sticky="EW")
 site_input.focus()
 
 email_input = Entry(width=35)
@@ -83,6 +116,9 @@ password_input.grid(column=1, row=3, sticky="EW")
 # Buttons
 generate_btn = Button(text="Generate Password", command=generate_password)
 generate_btn.grid(column=2, row=3, sticky="EW")
+
+search_btn = Button(text="Search", command=search_password)
+search_btn.grid(column=2, row=1, sticky="EW")
 
 add_btn = Button(text="Add", width=36, command=saving_password)
 add_btn.grid(column=1, row=4, columnspan=2, sticky="EW")

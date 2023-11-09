@@ -6,13 +6,15 @@ data_dict = {row.letter: row.code for (index, row) in data.iterrows()}
 
 
 # Create a list of the phonetic code words from a word that the user inputs.
-user_word = input("Enter the word: ")
-word_list = [data_dict[letter] for letter in user_word.upper()]
+def generate_nato():
+    user_word = input("Enter the word: ")
+    try:
+        word_list = [data_dict[letter] for letter in user_word.upper()]
+    except KeyError:
+        print("Sorry, only letters in the alphabet, please.")
+        generate_nato()
+    else:
+        print(word_list)
 
-#word_list = []
-# for letter in user_word.upper():
-#     for key in data_dict:
-#         if letter == key:
-#             word_list.append(data_dict[key])
 
-print(word_list)
+generate_nato()
