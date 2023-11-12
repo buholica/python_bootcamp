@@ -5,11 +5,16 @@ import random
 BACKGROUND_COLOR = "#B1DDC6"
 
 # ----------------------------------- CSV -------------------------------------#
-data_csv = pandas.read_csv("data/french_words.csv")
+try:
+    data_csv = pandas.read_csv("data/words_to_learn.csv")
+except FileNotFoundError:
+    data_csv = pandas.read_csv("data/french_words.csv")
+
 data = data_csv.to_dict(orient="records")
 current_card = {}
 
 
+# ------------------------------- FUNCTIONS ------------------------------------#
 def select_next_word():
     global current_card, flip_timer
     window.after_cancel(flip_timer)
@@ -24,6 +29,13 @@ def change_card():
     canvas.itemconfig(canvas_bg, image=back_img)
     canvas.itemconfig(card_title, text="English", fill="white")
     canvas.itemconfig(card_word, text=current_card["English"], fill="white")
+
+
+def is_known():
+    data.remove(current_card)
+    words_to_learn = pandas.DataFrame(data)
+    words_to_learn.to_csv("data/words_to_learn.csv", index=False)
+    select_next_word()
 
 
 # ----------------------------------- UI SETUP ----------------------------------- #
@@ -49,10 +61,9 @@ wrong_btn.grid(column=0, row=1)
 
 check_icon = PhotoImage(file="images/right.png")
 right_btn = Button(image=check_icon, borderwidth=0, bg=BACKGROUND_COLOR, activebackground=BACKGROUND_COLOR,
-                   command=select_next_word)
+                   command=is_known)
 right_btn.grid(column=1, row=1)
 
 select_next_word()
-
 
 window.mainloop()
