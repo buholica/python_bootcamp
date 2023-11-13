@@ -1,0 +1,9 @@
+Hey [NAME],
+
+Fun fact: Having a good birthday is 90% mental and 10% alcohol.
+Start the pouring, and happy birthday!
+
+Your lover of meat and hater of fish,
+Oksana
+
+(Letter created and sent by my small Python spamming app)

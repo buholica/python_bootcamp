@@ -1,0 +1,9 @@
+Hey [NAME],
+
+Smart, good-looking, and funny! But enough about me. Happy birthday!
+May your birthday be filled with happiness, joy and blessings.
+
+Your lover of meat and hater of fish,
+Oksana
+
+(Letter created and sent by my small Python spamming app )

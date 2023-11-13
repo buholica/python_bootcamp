@@ -1,0 +1,9 @@
+Dear [NAME],
+
+Happy birthday!
+I hope you celebrate this birthday the way you celebrated the first one: naked and screaming.
+
+Your lover of meat and hater of fish,
+Oksana
+
+(Letter created and sent by my small Python spamming app )
