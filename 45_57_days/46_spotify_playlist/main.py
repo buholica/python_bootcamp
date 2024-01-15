@@ -1,5 +1,3 @@
-from pprint import pprint
-
 import requests
 from bs4 import BeautifulSoup
 from datetime import datetime
@@ -7,7 +5,6 @@ from dotenv import load_dotenv
 import os
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
-import json
 
 load_dotenv("C:\\Users\\Oksana\\Desktop\\passwords.env.txt")
 
