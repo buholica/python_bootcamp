@@ -9,7 +9,8 @@
 
             <h1>Add a new cafe into the database</h1>
             {{ render_form(form, novalidate=True) }}
-            <p class="space-above"><a href="#">See all cafes</a></p>
+
+            <p class="space-above"><a href="{{ url_for('cafes') }}">See all cafes</a></p>
 
         </div>
     </div>
