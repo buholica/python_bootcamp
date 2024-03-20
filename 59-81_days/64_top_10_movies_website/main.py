@@ -7,34 +7,38 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField
 from wtforms.validators import DataRequired
 import requests
+from dotenv import load_dotenv
+import os
 
-'''
-Red underlines? Install the required packages first: 
-Open the Terminal in PyCharm (bottom left). 
-
-On Windows type:
-python -m pip install -r requirements.txt
-
-On MacOS type:
-pip3 install -r requirements.txt
-
-This will install the packages from requirements.txt for this project.
-'''
+load_dotenv("C:\\Users\\Oksana\\Desktop\\passwords.env.txt")
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = '8BYkEfBHO6O6donzWlSihBXox7C0sKR6b'
 Bootstrap5(app)
+
+MOVIE_API_TOKEN = os.getenv("MOVIE_API_TOKEN")
+MOVIE_API_KEY = os.getenv("MOVIE_API_KEY")
+headers = {
+    "accept": "application/json",
+    "Authorization": f"Bearer {MOVIE_API_TOKEN}",
+}
 
 # CREATE DB
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///movies_database.db"
 db = SQLAlchemy(app)
 
 
-# CREATE FORM
+# Form for editing a movie rating and reviews
 class EditForm(FlaskForm):
     rating = StringField(label='Your Rating Out of 10 e.g. 7.5', validators=[DataRequired()])
     review = StringField(label="Your Review", validators=[DataRequired()])
     submit = SubmitField(label="Done")
+
+
+# Form for adding a new movie
+class AddForm(FlaskForm):
+    movie_title = StringField(label='Movie Title', validators=[DataRequired()])
+    submit = SubmitField(label="Add Movie")
 
 
 # CREATE TABLE
@@ -83,7 +87,6 @@ class Movie(db.Model):
 #     db.session.commit()
 
 
-
 @app.route("/")
 def home():
     result = db.session.execute(db.select(Movie))
@@ -93,6 +96,7 @@ def home():
 
 @app.route("/delete")
 def delete():
+    """Delete a selected movie"""
     movie_id = request.args.get("id")
     movie_to_delete = db.session.execute(db.select(Movie).where(Movie.id == movie_id)).scalar()
     db.session.delete(movie_to_delete)
@@ -103,6 +107,7 @@ def delete():
 
 @app.route("/edit", methods=["GET", "POST"])
 def edit():
+    """Edit a selected movie"""
     edit_form = EditForm()
     movie_id = request.args.get("id")
     movie = db.get_or_404(Movie, movie_id)
@@ -112,6 +117,30 @@ def edit():
         db.session.commit()
         return redirect(url_for('home'))
     return render_template("edit.html", form=edit_form, movie=movie)
+
+
+@app.route("/add", methods=["GET", "POST"])
+def add_movie():
+    """Add a new movie"""
+    add_form = AddForm()
+    if add_form.validate_on_submit():
+        movie_title = add_form.movie_title.data
+        url = f"https://api.themoviedb.org/3/search/movie"
+        response = requests.get(url, params={"api_key": MOVIE_API_KEY, "query": movie_title})
+        movie_data = response.json()["results"]
+        return render_template("select.html", options=movie_data)
+
+    return render_template("add.html", form=add_form)
+
+@app.route("/select", methods=["GET", "POST"])
+def add_movie():
+    """Select a new movie that will be added to the DB"""
+    url = f"https://api.themoviedb.org/3/search/movie"
+    response = requests.get(url, params={"api_key": MOVIE_API_KEY, "query": movie_title})
+    movie_data = response.json()["results"]
+    return redirect(url_for('home'))
+
+    return render_template("select.html")
 
 
 
