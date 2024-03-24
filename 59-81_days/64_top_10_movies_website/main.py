@@ -18,13 +18,10 @@ Bootstrap5(app)
 
 MOVIE_API_TOKEN = os.getenv("MOVIE_API_TOKEN")
 MOVIE_API_KEY = os.getenv("MOVIE_API_KEY")
-headers = {
-    "accept": "application/json",
-    "Authorization": f"Bearer {MOVIE_API_TOKEN}",
-}
+MOVIE_DB_IMAGE_URL = "https://image.tmdb.org/t/p/w500"
 
 # CREATE DB
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///movies_database.db"
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///movies_db.db"
 db = SQLAlchemy(app)
 
 
@@ -44,13 +41,13 @@ class AddForm(FlaskForm):
 # CREATE TABLE
 class Movie(db.Model):
     id = db.Column(db.Integer, unique=True, primary_key=True)
-    title = db.Column(db.String(250), unique=True, nullable=False)
-    year = db.Column(db.Integer, nullable=False)
-    description = db.Column(db.Text, nullable=False)
-    rating = db.Column(db.Float, nullable=False)
-    ranking = db.Column(db.Integer, nullable=False)
-    review = db.Column(db.Text, nullable=False)
-    img_url = db.Column(db.Text, nullable=False)
+    title = db.Column(db.String(250), nullable=False)
+    year = db.Column(db.Integer)
+    description = db.Column(db.Text)
+    rating = db.Column(db.Float)
+    ranking = db.Column(db.Integer)
+    review = db.Column(db.Text)
+    img_url = db.Column(db.Text)
 
     def __repr__(self):
         return f"Book data: ('{self.id}', '{self.title}', '{self.author}', '{self.rating}')"
@@ -69,8 +66,8 @@ class Movie(db.Model):
 #     review="My favourite character was the caller.",
 #     img_url="https://image.tmdb.org/t/p/w500/tjrX2oWRCM3Tvarz38zlZM7Uc10.jpg"
 # )
-
-
+#
+#
 # second_movie = Movie(
 #     title="Avatar The Way of Water",
 #     year=2022,
@@ -80,7 +77,7 @@ class Movie(db.Model):
 #     review="I liked the water.",
 #     img_url="https://image.tmdb.org/t/p/w500/t6HIqrRAclMCA60NsSmeqe9RmNV.jpg"
 # )
-
+#
 # with app.app_context():
 #     db.session.add(new_movie)
 #     db.session.add(second_movie)
@@ -89,8 +86,13 @@ class Movie(db.Model):
 
 @app.route("/")
 def home():
-    result = db.session.execute(db.select(Movie))
-    all_movies = result.scalars()
+    result = db.session.execute(db.select(Movie).order_by(Movie.rating))
+    all_movies = result.scalars().all()
+
+    for i in range(len(all_movies)):
+        all_movies[i].ranking = len(all_movies) - i
+    db.session.commit()
+
     return render_template("index.html", movies=all_movies)
 
 
@@ -132,16 +134,24 @@ def add_movie():
 
     return render_template("add.html", form=add_form)
 
-@app.route("/select", methods=["GET", "POST"])
-def add_movie():
-    """Select a new movie that will be added to the DB"""
-    url = f"https://api.themoviedb.org/3/search/movie"
-    response = requests.get(url, params={"api_key": MOVIE_API_KEY, "query": movie_title})
-    movie_data = response.json()["results"]
-    return redirect(url_for('home'))
 
-    return render_template("select.html")
-
+@app.route("/find", methods=["GET", "POST"])
+def find_movie():
+    """Find a new movie that will be added to the DB"""
+    movie_api_id = request.args.get("id")
+    if movie_api_id:
+        movie_url = f"https://api.themoviedb.org/3/movie/{movie_api_id}"
+        response = requests.get(movie_url, params={"api_key": MOVIE_API_KEY})
+        data = response.json()
+        new_movie = Movie(
+            title=data["title"],
+            year=data["release_date"].split("-")[0],
+            description=data["overview"],
+            img_url=f"{MOVIE_DB_IMAGE_URL}{data['poster_path']}",
+        )
+        db.session.add(new_movie)
+        db.session.commit()
+        return redirect(url_for("edit", id=new_movie.id))
 
 
 if __name__ == '__main__':
