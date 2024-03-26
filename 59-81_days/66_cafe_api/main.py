@@ -117,11 +117,33 @@ def add_cafe():
 
 
 # HTTP PUT/PATCH - Update Record
-@app.route("/update-price/<cafe_id>", methods=["PATCH"])
-def update_coffee_price():
-    pass
+@app.route("/update-price/<int:cafe_id>", methods=["PATCH"])
+def update_coffee_price(cafe_id):
+    new_price = request.args.get("new_price")
+    cafe_to_update = db.session.execute(db.select(Cafe).where(Cafe.id == cafe_id)).scalar()
+    if cafe_to_update:
+        cafe_to_update.coffee_price = new_price
+        db.session.commit()
+        return jsonify(response={"success": f"Successfully updated the price for the {cafe_to_update.name}."}), 200
+    else:
+        return jsonify(error={"Not Found": "Sorry, a cafe with that id was not found in the database."}), 404
+
 
 # HTTP DELETE - Delete Record
+@app.route("/report-closed/<int:cafe_id>", methods=["DELETE"])
+def delete_cafe(cafe_id):
+    cafe_to_delete = db.session.execute(db.select(Cafe).where(Cafe.id == cafe_id)).scalar()
+    api_key = request.args.get("api_key")
+    if api_key == "admin007":
+        if cafe_to_delete:
+            db.session.delete(cafe_to_delete)
+            db.session.commit()
+            return jsonify(response={"success": f"Successfully deleted {cafe_to_delete.name}."}), 200
+        else:
+            return jsonify(error={"Not Found": "Sorry, a cafe with that id was not found in the database."}), 404
+    else:
+        return jsonify(error={"Not Found": "Sorry, that's not allowed. Make sure you have the correct api_key."}), 403
+
 
 
 if __name__ == '__main__':
