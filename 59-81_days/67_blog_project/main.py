@@ -1,18 +1,29 @@
-from flask import Flask, render_template, redirect, url_for, request
-from flask_bootstrap import Bootstrap5
-from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
-from sqlalchemy import Integer, String, Text
-from flask_wtf import FlaskForm
-from wtforms import StringField, SubmitField
-from wtforms.validators import DataRequired, URL
-from flask_ckeditor import CKEditor, CKEditorField
 from datetime import date
+from flask import Flask, abort, render_template, redirect, url_for, flash, request
+from flask_bootstrap import Bootstrap5
+from flask_ckeditor import CKEditor
+from flask_gravatar import Gravatar
+from flask_login import UserMixin, login_user, LoginManager, current_user, logout_user
+from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.orm import relationship, DeclarativeBase, Mapped, mapped_column
+from sqlalchemy import Integer, String, Text
+from functools import wraps
+from werkzeug.security import generate_password_hash, check_password_hash
+from flask_ckeditor import CKEditor, CKEditorField
+import os
+from dotenv import load_dotenv
+# Import your forms from the forms.py
+from forms import PostForm, RegisterForm
+from wtforms.validators import DataRequired
+
+load_dotenv("C:\\Users\\Oksana\\Desktop\\passwords.env.txt")
 
 app = Flask(__name__)
 ckeditor = CKEditor(app)
-app.config['SECRET_KEY'] = '8BYkEfBA6O6donzWlSihBXox7C0sKR6b'
+app.config['SECRET_KEY'] = os.getenv("FLASK_SECRET_KEY")
 Bootstrap5(app)
+
+# TODO: Configure Flask-Login
 
 
 # CREATE DATABASE
@@ -23,15 +34,6 @@ class Base(DeclarativeBase):
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///posts.db'
 db = SQLAlchemy(model_class=Base)
 db.init_app(app)
-
-
-class PostForm(FlaskForm):
-    title = StringField(label='Blog Post Title', validators=[DataRequired()])
-    subtitle = StringField(label='Subtitle', validators=[DataRequired()])
-    author = StringField(label='Your name', validators=[DataRequired()])
-    blog_img_url = StringField(label='Blog Image URL', validators=[DataRequired()])
-    body = CKEditorField("Blog Content", validators=[DataRequired()])
-    submit = SubmitField(label="Submit Post")
 
 
 # CONFIGURE TABLE
@@ -45,8 +47,43 @@ class BlogPost(db.Model):
     img_url: Mapped[str] = mapped_column(String(250), nullable=False)
 
 
+class User(UserMixin, db.Model):
+    __tablename__ = "users"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    email: Mapped[str] = mapped_column(String(100), unique=True)
+    password: Mapped[str] = mapped_column(String(100))
+    name: Mapped[str] = mapped_column(String(1000))
+
+
 with app.app_context():
     db.create_all()
+
+
+# TODO: Use Werkzeug to hash the user's password when creating a new user.
+@app.route('/register', methods=["GET", "POST"])
+def register():
+    register_form = RegisterForm()
+    if register_form.validate_on_submit():
+        new_user = User(
+            email=request.form.get("email"),
+            password=generate_password_hash(request.form.get("password"), method="pbkdf2:sha256", salt_length=8),
+            name=request.form.get("name")
+        )
+        db.session.add(new_user)
+        db.session.commit()
+        return redirect(url_for("get_all_posts"))
+    return render_template("register.html", form=register_form)
+
+
+# TODO: Retrieve a user from the database based on their email.
+@app.route('/login')
+def login():
+    return render_template("login.html")
+
+
+@app.route('/logout')
+def logout():
+    return redirect(url_for('get_all_posts'))
 
 
 @app.route('/')
@@ -56,12 +93,14 @@ def get_all_posts():
     return render_template("index.html", all_posts=posts)
 
 
+# TODO: Allow logged-in users to comment on posts
 @app.route('/post/<int:post_id>')
 def show_post(post_id):
     requested_post = db.get_or_404(BlogPost, post_id)
     return render_template("post.html", post=requested_post)
 
 
+# TODO: Use a decorator so only an admin user can create a new post
 @app.route("/new_post", methods=["GET", "POST"])
 def add_new_post():
     post_form = PostForm()
@@ -80,7 +119,7 @@ def add_new_post():
     return render_template("make-post.html", form=post_form)
 
 
-
+# TODO: Use a decorator so only an admin user can edit a post
 @app.route("/edit-post/<int:post_id>", methods=["GET", "POST"])
 def edit_post(post_id):
     requested_post = db.get_or_404(BlogPost, post_id)
@@ -103,6 +142,7 @@ def edit_post(post_id):
     return render_template("make-post.html", form=edit_form, is_edit=True)
 
 
+# TODO: Use a decorator so only an admin user can delete a post
 @app.route("/delete/<int:post_id>")
 def delete_post(post_id):
     post = db.get_or_404(BlogPost, post_id)
