@@ -40,7 +40,7 @@
       {% endfor %}
 
       <!-- New Post -->
-      <!-- TODO: Only show Create Post button if user id is 1 (admin user) -->
+      {% if current_user.id == 1: %}
       <div class="d-flex justify-content-end mb-4">
         <a
           class="btn btn-primary float-right"
@@ -48,6 +48,7 @@
           >Create New Post</a
         >
       </div>
+      {% endif %}
 
       <!-- Pager-->
       <div class="d-flex justify-content-end mb-4">
