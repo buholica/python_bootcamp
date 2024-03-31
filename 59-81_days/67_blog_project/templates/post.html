@@ -1,3 +1,4 @@
+{% from "bootstrap5/form.html" import render_form %}
 {% include "header.html" %}
 
 <!-- Page Header-->
@@ -10,7 +11,7 @@
           <h2 class="subheading">{{ post.subtitle }}</h2>
           <span class="meta"
             >Posted by
-            <a href="#">{{ post.author }}</a>
+            <a href="#">{{ post.author.name }}</a>
             on {{ post.date }}
           </span>
         </div>
@@ -25,7 +26,6 @@
     <div class="row gx-4 gx-lg-5 justify-content-center">
       <div class="col-md-10 col-lg-8 col-xl-7">
         {{ post.body|safe }}
-        <!--TODO: Only show Edit Post button if user id is 1 (admin user) -->
         {% if current_user.id == 1: %}
         <div class="d-flex justify-content-end mb-4">
           <a
@@ -37,7 +37,8 @@
         {% endif %}
 
         <!-- Comments Area -->
-        <!-- TODO: Add a CKEditor for commenting below -->
+        {{ ckeditor.load() }} {{ ckeditor.config(name='comment_text') }}
+        {{ render_form(form, novalidate=True, button_map={"submit": "primary"}) }}
         <div class="comment">
           <!-- TODO: Show all the comments on a post -->
           <ul class="commentList">
