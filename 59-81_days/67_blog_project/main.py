@@ -22,6 +22,15 @@ ckeditor = CKEditor(app)
 app.config['SECRET_KEY'] = os.getenv("FLASK_SECRET_KEY")
 Bootstrap5(app)
 
+gravatar = Gravatar(app,
+                    size=100,
+                    rating='g',
+                    default='retro',
+                    force_default=False,
+                    force_lower=False,
+                    use_ssl=False,
+                    base_url=None)
+
 
 # CREATE DATABASE
 class Base(DeclarativeBase):
@@ -154,7 +163,18 @@ def get_all_posts():
 def show_post(post_id):
     requested_post = db.get_or_404(BlogPost, post_id)
     comment_form = CommentForm()
-    
+    if comment_form.validate_on_submit():
+        if not current_user.is_authenticated:
+            flash("You need to login or register to comment.")
+            return redirect(url_for("login"))
+
+        new_comment = Comment(
+            comment_author=current_user,
+            text=request.form.get("comment_text"),
+            parent_post=requested_post
+        )
+        db.session.add(new_comment)
+        db.session.commit()
     return render_template("post.html", post=requested_post, current_user=current_user, form=comment_form)
 
 
@@ -192,8 +212,8 @@ def edit_post(post_id):
     if edit_form.validate_on_submit():
         requested_post.title = edit_form.title.data
         requested_post.subtitle = edit_form.subtitle.data
-        requested_post.img_url = edit_form.blog_img_url.data
-        requested_post.author = edit_form.author.data
+        requested_post.img_url = edit_form.img_url.data
+        requested_post.author = current_user
         requested_post.body = edit_form.body.data
         db.session.commit()
         return redirect(url_for("show_post", post_id=requested_post.id))
